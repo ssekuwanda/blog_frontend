@@ -2,7 +2,6 @@ import 'package:blog_frontend/postform.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import 'auth_service.dart';
 
 void main() {
@@ -13,9 +12,10 @@ class BlogApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Blog App',
+      debugShowCheckedModeBanner: false,
+      title: 'BDO PRIME',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.red,
       ),
       home: BlogHome(),
     );
@@ -31,6 +31,9 @@ class _BlogHomeState extends State<BlogHome> {
   List<dynamic> posts = [];
   AuthService _authService = AuthService();
   bool _isLoggedIn = false;
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   Future<void> fetchPosts() async {
     final response =
@@ -59,12 +62,38 @@ class _BlogHomeState extends State<BlogHome> {
   }
 
   Future<void> login() async {
-    final token = await _authService.login('your_username', 'your_password');
-    if (token != null) {
-      setState(() {
-        _isLoggedIn = true;
-      });
+    if (_formKey.currentState!.validate()) {
+      final username = _usernameController.text;
+      final password = _passwordController.text;
+      final token = await _authService.login(username, password);
+      if (token != null) {
+        setState(() {
+          _isLoggedIn = true;
+        });
+        navigateToPostsPage();
+      }
     }
+  }
+
+  Future<void> signup() async {
+    if (_formKey.currentState!.validate()) {
+      final username = _usernameController.text;
+      final password = _passwordController.text;
+      final token = await _authService.signup(username, password);
+      if (token != null) {
+        setState(() {
+          _isLoggedIn = true;
+        });
+        navigateToPostsPage(); // Redirect to posts page
+      }
+    }
+  }
+
+  void navigateToPostsPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => BlogHome()),
+    );
   }
 
   Future<void> logout() async {
@@ -86,7 +115,7 @@ class _BlogHomeState extends State<BlogHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flutter Blog App'),
+        title: const Text('BDO PRIME'),
       ),
       body: ListView.builder(
         itemCount: posts.length,
@@ -107,16 +136,79 @@ class _BlogHomeState extends State<BlogHome> {
           padding: EdgeInsets.zero,
           children: <Widget>[
             if (_isLoggedIn)
-              ListTile(
-                leading: const Icon(Icons.logout),
-                title: const Text('Logout'),
-                onTap: logout,
+              Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.logout),
+                    title: const Text('Logout'),
+                    onTap: logout,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.add_reaction),
+                    title: const Text('SignUp'),
+                    onTap: logout,
+                  )
+                ],
               )
             else
               ListTile(
                 leading: const Icon(Icons.login),
                 title: const Text('Login'),
-                onTap: login,
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Login'),
+                        content: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextFormField(
+                                controller: _usernameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Username',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your username';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              TextFormField(
+                                controller: _passwordController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Password',
+                                ),
+                                obscureText: true,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your password';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        actions: <Widget>[
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: login,
+                            child: const Text('Login'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
           ],
         ),

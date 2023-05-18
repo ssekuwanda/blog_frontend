@@ -27,6 +27,28 @@ class AuthService {
     }
   }
 
+  Future<String?> signup(String username, String password) async {
+    // Make a POST request to your signup endpoint and handle the response accordingly
+    try {
+      final response = await http.post(
+        Uri.parse('$apiUrl/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username, 'password': password}),
+      );
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return data['token'];
+      } else {
+        // Handle signup failure or other errors
+        return null;
+      }
+    } catch (e) {
+      // Handle network errors
+      return null;
+    }
+  }
+
   Future<void> logout() async {
     await _removeToken();
   }
